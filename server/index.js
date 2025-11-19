@@ -1,7 +1,7 @@
 /**
  * EEF Manager Backend Server
  *
- * Express server with Microsoft Graph API integration for automated emails
+ * Express server for EEF Manager application
  */
 
 import express from 'express';
@@ -9,7 +9,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import emailRoutes from './routes/email.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 // Load environment variables
@@ -44,7 +43,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
-app.use('/api/email', emailRoutes);
+// (Add your API routes here)
 
 // 404 handler
 app.use((req, res) => {
@@ -60,7 +59,6 @@ app.use(errorHandler);
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 EEF Manager Backend running on port ${PORT}`);
-  console.log(`📧 Email API available at http://localhost:${PORT}/api/email`);
   console.log(`🏥 Health check at http://localhost:${PORT}/health`);
 });
 

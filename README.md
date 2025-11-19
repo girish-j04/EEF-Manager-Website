@@ -1,6 +1,6 @@
 # EEF Manager
 
-A modern SaaS application for managing EEF (Educational Equity Fund) proposals with automated email notifications via Microsoft Graph API.
+A modern SaaS application for managing EEF (Educational Equity Fund) proposals.
 
 ## Features
 
@@ -9,11 +9,10 @@ A modern SaaS application for managing EEF (Educational Equity Fund) proposals w
 -  **Survey System**: Review submission and tracking
 -  **Tracker**: Assignment management and status tracking
 -  **Approval Workflow**: Track approved proposals and funding
--  **Automated Emails**: Send notifications via Microsoft Graph API
 
 ## Refactoring History
 
-This is a refactored version of the original EEF Manager application. The original monolithic HTML file has been split into modular, maintainable files with a Node.js backend added for email functionality.
+This is a refactored version of the original EEF Manager application. The original monolithic HTML file has been split into modular, maintainable files.
 
 ## Project Structure
 
@@ -21,13 +20,8 @@ This is a refactored version of the original EEF Manager application. The origin
 EEF Manager/
 ├── server/                     # Backend Node.js server
 │   ├── index.js               # Express server entry point
-│   ├── routes/
-│   │   └── email.js          # Email API routes
-│   ├── services/
-│   │   └── graphClient.js    # Microsoft Graph service
 │   └── middleware/
-│       ├── errorHandler.js   # Error handling
-│       └── validators.js     # Request validation
+│       └── errorHandler.js   # Error handling
 ├── js/                         # Frontend JavaScript modules
 │   ├── config.js              # Firebase configuration
 │   ├── utils.js               # DOM helpers, formatting, notifications
@@ -89,8 +83,6 @@ EEF Manager/
 
 ### Backend
 - Node.js with Express
-- Microsoft Graph API (@microsoft/microsoft-graph-client)
-- Azure Identity for authentication
 - CORS, Helmet, Morgan for security and logging
 
 ## Setup Instructions
@@ -99,33 +91,6 @@ EEF Manager/
 
 1. **Node.js** (v18 or higher)
 2. **Firebase Project** with Firestore and Authentication enabled
-3. **Azure AD App Registration** for Microsoft Graph API
-
-### Azure AD App Registration
-
-1. Go to [Azure Portal](https://portal.azure.com/) > **Azure Active Directory** > **App registrations**
-2. Click **New registration**
-   - Name: `EEF Manager Email Service`
-   - Supported account types: **Accounts in this organizational directory only**
-   - Click **Register**
-
-3. **Note down**:
-   - Application (client) ID
-   - Directory (tenant) ID
-
-4. **Create Client Secret**:
-   - Go to **Certificates & secrets** > **New client secret**
-   - Description: `EEF Manager Secret`
-   - Expires: Choose duration
-   - Click **Add** and **copy the secret value immediately**
-
-5. **API Permissions**:
-   - Go to **API permissions** > **Add a permission**
-   - Choose **Microsoft Graph** > **Application permissions**
-   - Add these permissions:
-     - `Mail.Send` - Send mail as any user
-     - `User.Read.All` - Read all users' full profiles (optional, for user verification)
-   - Click **Grant admin consent** for your organization
 
 ### Installation
 
@@ -139,18 +104,11 @@ EEF Manager/
    cp .env.example .env
    ```
 
-   Edit `.env` and add your Azure credentials:
+   Edit `.env`:
    ```env
    PORT=3000
    NODE_ENV=development
    FRONTEND_URL=http://localhost:8000
-
-   # From Azure App Registration
-   TENANT_ID=your-tenant-id-here
-   CLIENT_ID=your-client-id-here
-   CLIENT_SECRET=your-client-secret-here
-
-   DEFAULT_FROM_EMAIL=noreply@yourdomain.com
    ```
 
 3. **Configure Firebase**:
@@ -182,81 +140,12 @@ npm start
 
 ## API Endpoints
 
-### Email API
-
-#### Send Single Email
-```http
-POST /api/email/send
-Content-Type: application/json
-
-{
-  "from": "sender@example.com",
-  "to": "recipient@example.com",
-  "subject": "Email Subject",
-  "body": "<h1>HTML Email Body</h1>",
-  "isHtml": true
-}
-```
-
-#### Send Batch Emails
-```http
-POST /api/email/send-batch
-Content-Type: application/json
-
-{
-  "emails": [
-    {
-      "from": "sender@example.com",
-      "to": "recipient1@example.com",
-      "subject": "Subject 1",
-      "body": "Body 1"
-    }
-  ]
-}
-```
-
-#### Get User Info
-```http
-GET /api/email/user/:userId
-```
-
-#### Test Connection
-```http
-POST /api/email/test
-```
-
-#### Health Check
+### Health Check
 ```http
 GET /health
 ```
 
-## Frontend Integration Example
-
-```javascript
-// Send email from frontend
-async function sendEmail(emailData) {
-  const response = await fetch('http://localhost:3000/api/email/send', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: 'noreply@yourdomain.com',
-      to: 'reviewer@example.com',
-      subject: 'New Proposal Assignment',
-      body: `
-        <h2>You have been assigned a new proposal</h2>
-        <p>Project: ${projectName}</p>
-        <p>Due Date: ${dueDate}</p>
-        <p><a href="${proposalUrl}">View Proposal</a></p>
-      `,
-      isHtml: true
-    })
-  });
-
-  return await response.json();
-}
-```
+Returns server status and timestamp.
 
 ## Development
 
@@ -280,32 +169,26 @@ The original monolithic file is preserved as index.html.backup for reference.
 ## Security Notes
 
 1. **Never commit `.env` file** - It contains sensitive credentials
-2. **Grant admin consent** for Graph API permissions in Azure Portal
-3. **Use HTTPS in production** for all API communications
-4. **Limit CORS origins** to your production domain
-5. **Rotate client secrets** periodically
-6. **Use service accounts** for sending emails (not personal accounts)
+2. **Use HTTPS in production** for all API communications
+3. **Limit CORS origins** to your production domain
+4. **Keep Firebase configuration secure** - Configure proper Firestore security rules
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"Missing required environment variables"**
-   - Check that `.env` file exists and contains all required variables
-   - Verify credentials are correct from Azure Portal
-
-2. **"Failed to send email: Insufficient privileges"**
-   - Ensure API permissions are granted in Azure Portal
-   - Admin consent must be granted
-   - Verify the sender email has a mailbox in your organization
-
-3. **CORS errors**
+1. **CORS errors**
    - Check `FRONTEND_URL` in `.env` matches your frontend URL
    - Ensure backend server is running
 
-4. **"Cannot find module"**
+2. **"Cannot find module"**
    - Run `npm install` to install dependencies
    - Check Node.js version (v18+ required)
+
+3. **Firebase connection issues**
+   - Verify your Firebase configuration in [js/config.js](js/config.js)
+   - Check that Firestore and Authentication are enabled in your Firebase project
+   - Review Firestore security rules
 
 ## Browser Compatibility
 
