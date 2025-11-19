@@ -1,6 +1,6 @@
 # EEF Manager
 
-A modern SaaS application for managing EEF (Educational Equity Fund) proposals with automated email notifications via Microsoft Graph API.
+A modern SaaS application for managing EEF proposals with automated email notifications via Microsoft Graph API.
 
 ## Features
 
