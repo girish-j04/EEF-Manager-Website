@@ -1,6 +1,6 @@
 # EEF Manager
 
-A modern SaaS application for managing EEF (Educational Equity Fund) proposals.
+A modern SaaS application for managing EEF proposals.
 
 ## Features
 
@@ -198,6 +198,4 @@ Requires a modern browser with ES6 module support:
 - Safari 11+
 - Edge 16+
 
-## License
 
-ISC
