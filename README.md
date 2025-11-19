@@ -315,6 +315,4 @@ Requires a modern browser with ES6 module support:
 - Safari 11+
 - Edge 16+
 
-## License
 
-ISC
