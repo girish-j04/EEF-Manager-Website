@@ -148,6 +148,7 @@ export function mountApprovedUI() {
 }
 
 // Mount Modal UI
+// Mount Modal UI
 export function mountModal() {
     $("detail").innerHTML = `
         <div class="modal-card">
@@ -161,18 +162,36 @@ export function mountModal() {
 
             <div class="modal-body">
                 <div class="flex gap-8" style="align-items:center; justify-content:flex-end">
-                    <a id="dt-prop" class="btn btn-primary btn-sm w-auto" target="_blank" rel="noopener" style="display:none">View Full Proposal</a>
+                    <a id="dt-prop"
+                       class="btn btn-primary btn-sm w-auto"
+                       target="_blank"
+                       rel="noopener"
+                       style="display:none">
+                        View Full Proposal
+                    </a>
                 </div>
+
                 <h3 style="margin:12px 0 8px">Reviewer Notes</h3>
                 <div id="dt-notes"></div>
+
+                <h3 style="margin:16px 0 8px">Previous Years</h3>
+                <div id="dt-prev" style="font-size:13px;color:#9ca3af;">
+                    <div>Searching for similar proposals in previous cycles…</div>
+                </div>
             </div>
 
             <div class="modal-actions">
                 <h3 style="margin:0 0 8px">Add / Edit Internal Note</h3>
-                <div id="autosave-status" style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
-                <textarea id="dt-note" placeholder="Internal note (not a survey response)" style="width:95%;min-height:110px;background:#334155;color:#F1F5F9;border:1px solid #334155;border-radius:10px;padding:9px 12px;"></textarea>
+                <div id="autosave-status"
+                     style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
+                <textarea id="dt-note"
+                          placeholder="Internal note (not a survey response)"
+                          style="width:95%;min-height:110px;background:#334155;color:#F1F5F9;
+                                 border:1px solid #334155;border-radius:10px;padding:9px 12px;"></textarea>
             </div>
-            <div id="amt-status" style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
+
+            <div id="amt-status"
+                 style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
 
             <div class="modal-actions flex gap-12 flex-wrap">
                 <div style="max-width:220px;flex:1 1 200px">
@@ -189,7 +208,9 @@ export function mountModal() {
                     <input id="dt-amount" type="number" placeholder="0.00">
                 </div>
                 <div class="w-auto">
-                    <button id="dt-save-amount" class="btn btn-primary">Save Amount & Status</button>
+                    <button id="dt-save-amount" class="btn btn-primary">
+                        Save Amount & Status
+                    </button>
                 </div>
                 <div class="w-auto">
                     <button id="dt-approve" class="btn btn-success">Approve</button>
@@ -198,6 +219,7 @@ export function mountModal() {
         </div>
     `;
 }
+
 
 // In-modal toast (persist until modal closes)
 export function notifyModal(message, type = "info", durationMs = 4000) {
