@@ -554,18 +554,6 @@ tbody tr:hover {
     min-width: 180px;
 }
 
-.bulk-hint {
-    border: 1px dashed var(--border-strong);
-    border-radius: var(--radius-md);
-    padding: 10px 14px;
-    background: var(--bg-accent);
-    color: var(--text);
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-}
-
 #trk-table td:first-child {
     font-weight: 600;
 }
@@ -1139,6 +1127,75 @@ tbody tr:hover {
     background: var(--danger-light);
     color: var(--danger);
     transform: rotate(90deg);
+}
+
+.auto-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 15, 25, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 2500;
+}
+
+.auto-modal-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    width: min(620px, 95vw);
+    box-shadow: var(--shadow-md);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auto-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.auto-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.auto-modal-header p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.auto-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.auto-field textarea {
+    min-height: 100px;
+}
+
+.auto-field small {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.auto-columns {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+}
+
+.auto-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
 }
 
 /* --- RESPONSIVE DESIGN --- */

@@ -178,6 +178,40 @@
     <!-- Details Modal -->
     <div id="detail" class="hidden"></div>
 
+    <!-- Auto Assign Modal -->
+    <div id="auto-assign-modal" class="auto-modal hidden">
+        <div class="auto-modal-card">
+            <div class="auto-modal-header">
+                <div>
+                    <h3>Automatic Reviewer Assignment</h3>
+                    <p>Provide meeting dates and reviewer pool to assign proposals.</p>
+                </div>
+                <button id="auto-close" class="close-x">&times;</button>
+            </div>
+            <div class="auto-modal-body">
+                <div class="auto-field">
+                    <label>Projected Meeting Dates (one per line)</label>
+                    <textarea id="auto-dates" placeholder="e.g. 2025-02-05&#10;2025-02-07&#10;2025-02-12"></textarea>
+                    <small>Dates should be in YYYY-MM-DD format. Ordered list determines assignment sequence.</small>
+                </div>
+                <div class="auto-columns">
+                    <div class="auto-field">
+                        <label>Reviewers per Proposal</label>
+                        <input id="auto-count" type="number" min="1" max="5" value="2">
+                    </div>
+                    <div class="auto-field">
+                        <label>Reviewer Pool (one per line)</label>
+                        <textarea id="auto-reviewers" placeholder="Reviewer 1&#10;Reviewer 2&#10;Reviewer 3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="auto-modal-actions">
+                <button id="auto-cancel" class="btn btn-outline">Cancel</button>
+                <button id="auto-run" class="btn btn-primary">Run Auto Assign</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Modules -->
     <script type="module" src="js/app.js"></script>
 </body>

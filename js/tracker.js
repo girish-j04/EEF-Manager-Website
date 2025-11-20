@@ -1,34 +1,18 @@
 /**
  * Tracker Functions
  *
- * This module handles tracker tab operations including bulk assignment,
+ * This module handles tracker tab operations including auto assignment,
  * rendering tracker table with status/due date filtering and sorting,
  * and helper functions for tracker interactions.
  */
 
-import { $, setText, esc, attr, notify, showEl, toLocalYMD, firstName } from './utils.js';
+import { $, setText, esc, attr, notify, toLocalYMD, firstName, looksLikeUrl, canonicalizeSharePointLink } from './utils.js';
 import { storage } from './storage.js';
 
 // Global filter/sort state for tracker due date filter + sort
 let activeStatusFilters = new Set();
 let dueSort = null;
 let trkDateFilter = ""; // yyyy-mm-dd or empty (stored as local date)
-
-// Start bulk assign
-export function startBulkAssign(app) {
-    const name = prompt("Bulk Assign\n\nType a reviewer name to assign by clicking on rows:")?.trim();
-    if (!name) return;
-    app.bulk = { active: true, name, selected: new Set() };
-    setText("bulk-name", name);
-    showEl("bulk-hint", true);
-}
-
-// End bulk assign
-export function endBulkAssign(app, renderTracker) {
-    if (app.bulk) { app.bulk.active = false; app.bulk.selected.clear(); }
-    showEl("bulk-hint", false);
-    renderTracker();
-}
 
 // Build status dropdown
 export function buildStatusDropdown(uniqueStatuses) {
@@ -221,14 +205,6 @@ export function renderTracker(app, renderReviewerDashboard, openDetail) {
         const projEncoded = tr.getAttribute('data-project') || "";
         const project = projEncoded ? decodeURIComponent(projEncoded) : "";
 
-        // row click toggles bulk selection
-        tr.onclick = (e) => {
-            // only toggle bulk selection if bulk mode active
-            if (app.bulk?.active) {
-                app_rowToggleBulk(project, tr, app);
-            }
-        };
-
         // Details button
         const detailsBtn = tr.querySelector('button[data-action="details"]');
         if (detailsBtn) {
@@ -298,17 +274,6 @@ window.app_openDetailAndFocus = (project, reviewer, evt, openDetail) => {
     openDetail(project);
 };
 
-window.app_rowToggleBulk = async (project, tr, app) => {
-    if (!app.bulk || !app.bulk.active) return;
-    const list = app.assignments[project] || [];
-    const name = app.bulk.name;
-    const i = list.indexOf(name);
-    if (i >= 0) { list.splice(i, 1); tr.style.outline = ""; tr.style.background = ""; app.bulk.selected.delete(project); }
-    else { list.push(name); tr.style.outline = "2px dashed #06B6D4"; tr.style.background = "rgba(6,182,212,.06)"; app.bulk.selected.add(project); }
-    app.assignments[project] = [...new Set(list)];
-    await storage.saveAssignments(app.selectedId, app.assignments);
-};
-
 window.app_goSubmit = (project) => {
     // First update the form value
     const form = $("survey");
@@ -363,3 +328,113 @@ export function getProposalUrl(project, tab, matchCol) {
 
 // Export filter/sort state and functions for post-processing
 export { activeStatusFilters, dueSort, trkDateFilter };
+
+export function openAutoAssignModal(app) {
+    const modal = $("auto-assign-modal");
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    const cfg = app.autoAssignConfig || { meetingDates: [], reviewerCount: 2, reviewerPool: [] };
+    const datesInput = cfg.meetingDates?.join("\n") || "";
+    $("auto-dates").value = datesInput;
+    $("auto-count").value = cfg.reviewerCount || 2;
+    $("auto-reviewers").value = (cfg.reviewerPool || []).join("\n");
+}
+
+export function closeAutoAssignModal() {
+    const modal = $("auto-assign-modal");
+    if (!modal) return;
+    modal.classList.add("hidden");
+    document.body.style.overflow = "";
+}
+
+export async function runAutoAssign(app, rerenderTracker, rerenderDashboard) {
+    const modal = $("auto-assign-modal");
+    if (!modal) return;
+    const rawDates = $("auto-dates").value || "";
+    const reviewerCount = Math.max(1, parseInt($("auto-count").value, 10) || 2);
+    const reviewerPoolRaw = $("auto-reviewers")?.value || "";
+    const reviewerPool = reviewerPoolRaw
+        .split(/\n|,/)
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    const meetingDates = Array.from(new Set(rawDates.split(/\n|,/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => toLocalYMD(line) || toLocalYMD(new Date(line)))
+        .filter(Boolean))).sort();
+    if (!meetingDates.length) return notify("Please enter at least one meeting date.", "error");
+    if (reviewerPool.length < reviewerCount) return notify("Reviewer pool must be at least the reviewers-per-proposal value.", "error");
+
+    const tab = app.activeTab;
+    if (!tab) return notify("No dataset selected.", "error");
+    const matchCol = tab.matchColumn || tab.headers?.[0];
+    if (!matchCol) return notify("No match column available.", "error");
+
+    const projects = [...new Set((tab.data || [])
+        .filter(r => !r._hidden)
+        .map(r => String(r[matchCol] || "").trim())
+        .filter(Boolean))];
+    if (!projects.length) return notify("No visible projects to assign.", "error");
+
+    const chunkSize = Math.max(1, Math.ceil(projects.length / meetingDates.length));
+    let currentDateIndex = 0;
+    let chunkCounter = 0;
+
+    const combosUsed = new Set();
+    let queueIndex = 0;
+
+    const getNextCombo = () => {
+        if (reviewerPool.length === 0) return [];
+        if (reviewerPool.length === reviewerCount) return reviewerPool.slice();
+        let fallback = reviewerPool.slice(0, reviewerCount);
+        let attempts = 0;
+        while (attempts < reviewerPool.length) {
+            const combo = [];
+            for (let i = 0; i < reviewerCount; i++) {
+                combo.push(reviewerPool[(queueIndex + i) % reviewerPool.length]);
+            }
+            const key = combo.slice().sort().join("|");
+            queueIndex = (queueIndex + 1) % reviewerPool.length;
+            attempts++;
+            if (!combosUsed.has(key)) {
+                combosUsed.add(key);
+                return combo;
+            }
+            if (attempts === 1) fallback = combo;
+        }
+        return fallback;
+    };
+
+    const newAssignments = {};
+    const dueSaves = [];
+
+    projects.forEach(project => {
+        if (chunkCounter >= chunkSize && currentDateIndex < meetingDates.length - 1) {
+            currentDateIndex++;
+            chunkCounter = 0;
+        }
+        const dueDate = meetingDates[currentDateIndex];
+        chunkCounter++;
+
+        const reviewers = getNextCombo();
+        newAssignments[project] = reviewers;
+        app.proposalDue[project] = dueDate;
+        dueSaves.push(storage.saveProposalField(app.selectedId, project, { dueDate }));
+    });
+
+    await Promise.all(dueSaves);
+    await storage.saveAssignments(app.selectedId, newAssignments);
+    app.assignments = newAssignments;
+    app.autoAssignConfig = {
+        meetingDates,
+        reviewerCount,
+        reviewerPool
+    };
+
+    closeAutoAssignModal();
+    if (rerenderTracker) rerenderTracker();
+    if (rerenderDashboard) rerenderDashboard();
+    notify("Automatic assignment completed.", "success");
+}

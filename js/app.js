@@ -31,9 +31,10 @@ import {
     autofillReviewerName
 } from './survey.js';
 import {
-    startBulkAssign,
-    endBulkAssign,
-    renderTracker
+    renderTracker,
+    openAutoAssignModal,
+    closeAutoAssignModal,
+    runAutoAssign
 } from './tracker.js';
 import { renderApproved, exportApproved, remapApproved } from './approved.js';
 import { openDetail } from './modal.js';
@@ -121,7 +122,8 @@ const app = {
     surveys: [], assignments: {}, // <- current dataset's assignments map
     approved: { headers: ["Project Name", "Email", "Requested Amount", "Given Amount", "Funding Status", "Notes"], data: [] },
     proposalAmounts: {}, proposalNotes: {}, proposalStatus: {}, proposalDue: {},
-    editingSurveyId: null, assigneeQuery: "", bulk: null,
+    editingSurveyId: null, assigneeQuery: "",
+    autoAssignConfig: { meetingDates: [], reviewerCount: 2, reviewerPool: [] },
     lastReloadAt: null,
     dataFilters: {},
     dataSearch: "",
@@ -130,6 +132,14 @@ const app = {
     get activeTab() { return this.tabs.find(t => t.id === this.selectedId) || null; },
     isAmountHeader: h => /amount|requested|price|cost|budget|funds?/i.test(String(h || "")),
 };
+
+function boundOpenDetail(project) {
+    openDetail(project, app, renderApproved, refreshTracker, renderDashboard);
+}
+
+function refreshTracker() {
+    renderTracker(app, renderReviewerDashboard, boundOpenDetail);
+}
 
 // Make app globally accessible for legacy code
 window.app = app;
@@ -249,7 +259,7 @@ function showSection(name) {
         updateSurveyProjectMeta(app, ($("svy-projectName")?.value || "").trim());
         autofillReviewerName(app);
     }
-    if (name === "Tracker") renderTracker(app, renderReviewerDashboard, openDetail);
+    if (name === "Tracker") refreshTracker();
     if (name === "Approved") renderApproved(app, openDetail);
 }
 
@@ -265,7 +275,7 @@ function renderAll() {
     updateSurveyProposalLink(app, findProposalUrlByName);
     updateSurveyProjectMeta(app, ($("svy-projectName")?.value || "").trim());
     autofillReviewerName(app);
-    renderTracker(app, renderReviewerDashboard, openDetail);
+    refreshTracker();
     renderApproved(app, openDetail);
 }
 
@@ -327,7 +337,7 @@ function bindUI() {
         form.onsubmit = async (e) => {
             e.preventDefault();
             const fd = new FormData(form);
-            await submitSurvey(fd, app, renderSurvey, renderTracker, renderDashboard, updateSurveyProposalLink);
+            await submitSurvey(fd, app, renderSurvey, refreshTracker, renderDashboard, updateSurveyProposalLink);
             notify("Review submitted", "success");
         };
     }
@@ -416,17 +426,27 @@ function bindUI() {
     }
 
     // Tracker
-    $("trk-refresh").onclick = () => renderTracker(app, renderReviewerDashboard, openDetail);
-    $("trk-bulk").onclick = () => startBulkAssign(app);
-    $("bulk-done").onclick = () => endBulkAssign(app, renderTracker);
-    $("trk-q").oninput = (e) => { app.assigneeQuery = (e.target.value || "").toLowerCase(); renderTracker(app, renderReviewerDashboard, openDetail); };
-    $("trk-q-clr").onclick = () => { app.assigneeQuery = ""; $("trk-q").value = ""; renderTracker(app, renderReviewerDashboard, openDetail); };
+    $("trk-refresh").onclick = refreshTracker;
+    const autoBtn = $("trk-auto");
+    if (autoBtn) autoBtn.onclick = () => openAutoAssignModal(app);
+    ["auto-close", "auto-cancel"].forEach(id => {
+        const btn = $(id);
+        if (btn) btn.onclick = () => closeAutoAssignModal();
+    });
+    const autoRun = $("auto-run");
+    if (autoRun) autoRun.onclick = () => runAutoAssign(
+        app,
+        refreshTracker,
+        () => renderDashboard(app)
+    );
+    $("trk-q").oninput = (e) => { app.assigneeQuery = (e.target.value || "").toLowerCase(); refreshTracker(); };
+    $("trk-q-clr").onclick = () => { app.assigneeQuery = ""; $("trk-q").value = ""; refreshTracker(); };
     // use safe setter for tracker match select to respect locks/audit
     $("trk-match").onchange = async () => {
         const tab = app.activeTab; if (!tab) return;
         const newCol = $("trk-match").value;
         await setMatchColumn(tab, newCol, app, { force: false, user: "interface" });
-        renderTracker(app, renderReviewerDashboard, openDetail);
+        refreshTracker();
         renderData(app, setMatchColumn, updateMatchControlsUI, updateSurveyProposalLink);
     };
 
@@ -486,12 +506,12 @@ async function toggleArchiveActiveDataset(app, renderTopFn) {
 }
 
 // Make global functions accessible for window calls
-window.app_toggleHideDataRow = (rowIndex) => app_toggleHideDataRow(rowIndex, app, renderData, renderTracker);
+window.app_toggleHideDataRow = (rowIndex) => app_toggleHideDataRow(rowIndex, app, renderData, refreshTracker);
 window.app_openDetailFromData = (project) => {
     showSection("Tracker");
-    openDetail(project, app, renderApproved, renderTracker, renderDashboard);
+    boundOpenDetail(project);
 };
-window.openDetail = (project) => openDetail(project, app, renderApproved, renderTracker, renderDashboard);
+window.openDetail = boundOpenDetail;
 
 // === Event listeners on load ===
 document.addEventListener("DOMContentLoaded", () => {

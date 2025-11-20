@@ -74,15 +74,11 @@ export function mountTrackerUI() {
                 <select id="trk-match" class="w-auto"></select>
                 <input id="trk-q" placeholder="Search assignee…" class="w-220">
                 <button id="trk-q-clr" class="btn btn-sm btn-outline">Clear</button>
-                <button id="trk-bulk" class="btn btn-primary btn-sm">Bulk Assign</button>
+                <button id="trk-auto" class="btn btn-primary btn-sm">Auto Assign</button>
                 <button id="trk-refresh" class="btn btn-sm btn-outline">Refresh</button>
             </div>
         </div>
         <div class="card-body tracker-body">
-            <div id="bulk-hint" class="bulk-hint hidden">
-                <span>Bulk Assign:</span> <strong id="bulk-name">—</strong>
-                <button id="bulk-done" class="btn btn-sm">Done</button>
-            </div>
             <div class="table-wrap tracker-table scrollbar mt-8">
                 <table id="trk-table">
                     <thead>
