@@ -102,13 +102,15 @@ After deployment, verify these features:
 - Check Gmail App Password is correct
 - Ensure `config/reviewers` document exists in Firestore
 
-### API Errors
+### API Errors (404 Not Found)
+- Ensure the `api/` directory with `index.js` exists in your repository
 - Check Vercel function logs: Dashboard → Functions → Logs
 - Verify environment variables are set correctly
+- Make sure `vercel.json` is in the root directory
 
 ### CORS Errors
 - Backend automatically allows same-origin requests
-- If issues persist, check `server/index.js` CORS configuration
+- If issues persist, check `api/index.js` CORS configuration
 
 ## Custom Domain (Optional)
 

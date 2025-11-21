@@ -18,7 +18,9 @@ This is a refactored version of the original EEF Manager application. The origin
 
 ```
 EEF Manager/
-├── server/                     # Backend Node.js server
+├── api/                        # Vercel serverless functions
+│   └── index.js               # Express API entry point
+├── server/                     # Backend Node.js server (local dev)
 │   ├── index.js               # Express server entry point
 │   └── middleware/
 │       └── errorHandler.js   # Error handling
