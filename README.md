@@ -104,12 +104,21 @@ EEF Manager/
    cp .env.example .env
    ```
 
-   Edit `.env`:
+   Edit `.env` with your actual values:
    ```env
    PORT=3000
    NODE_ENV=development
    FRONTEND_URL=http://localhost:8000
+
+   # SMTP Configuration (required for email reminders)
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-gmail-app-password
+   FROM_EMAIL=your-email@gmail.com
    ```
+
+   See [.env.example](.env.example) for detailed documentation on all variables.
 
 3. **Configure Firebase**:
    - Update `js/config.js` with your Firebase configuration
@@ -143,17 +152,146 @@ npm start
 Use the **Email Reminders** button in the Tracker tab to email each reviewer a summary of their assigned projects/due dates. The frontend gathers reviewer metadata and calls the backend route `POST /api/email/reminders`, which in turn uses basic SMTP credentials.
 
 1. **Reviewer directory** – In Firestore create the document `config/reviewers` with a map of reviewer names to email addresses. Names are matched case-insensitively (and by first name) so `{"Bianca": "bianca@example.edu"}` is enough.
-2. **Configure SMTP env vars** – Update `.env` (or the actual environment) with:
+2. **Configure SMTP env vars** – Update `.env` (or your hosting environment variables) with:
    ```env
    SMTP_HOST=smtp.gmail.com
    SMTP_PORT=465
-   SMTP_USERNAME=cuphdadvisor@gmail.com
-   SMTP_PASSWORD=xhpowtbjqrbxuxsm
-   FROM_EMAIL=cuphdadvisor@gmail.com
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   FROM_EMAIL=your-email@gmail.com
    ```
-   Change these values to use a different mailbox/provider.
+   Change these values to use your own mailbox/provider.
 3. **Run the backend** – `npm run dev` (or `npm start`) must be running so the `/api/email/reminders` endpoint is available.
 4. **Send emails** – Open the Tracker tab and click **Email Reminders**. The UI will disable the button while the server sends emails and will warn you if any reviewers are missing email addresses in the Firestore directory.
+
+## Deployment
+
+### Quick Deploy to Vercel
+
+For a quick 5-minute deployment, see **[QUICKSTART.md](QUICKSTART.md)**
+
+For detailed deployment instructions and troubleshooting, see **[DEPLOYMENT.md](DEPLOYMENT.md)**
+
+### Deploying to Vercel
+
+This application can be easily deployed to Vercel with both frontend and backend.
+
+#### Prerequisites
+
+1. **Vercel Account** - Sign up at [vercel.com](https://vercel.com)
+2. **Vercel CLI** (optional) - Install with `npm install -g vercel`
+3. **Firebase Project** configured with your production credentials
+
+#### Deployment Steps
+
+##### Option 1: Deploy via Vercel Dashboard (Recommended)
+
+1. **Push your code to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push origin main
+   ```
+
+2. **Import project to Vercel**:
+   - Go to [vercel.com/new](https://vercel.com/new)
+   - Import your GitHub repository
+   - Vercel will auto-detect the configuration from `vercel.json`
+
+3. **Configure Environment Variables**:
+   In the Vercel dashboard, add these environment variables:
+   ```
+   NODE_ENV=production
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   FROM_EMAIL=your-email@gmail.com
+   ```
+
+4. **Deploy**:
+   - Click "Deploy"
+   - Vercel will build and deploy your application
+   - You'll receive a production URL (e.g., `your-app.vercel.app`)
+
+##### Option 2: Deploy via Vercel CLI
+
+1. **Install Vercel CLI**:
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Login to Vercel**:
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy**:
+   ```bash
+   vercel
+   ```
+   Follow the prompts to link your project.
+
+4. **Add environment variables**:
+   ```bash
+   vercel env add SMTP_HOST
+   vercel env add SMTP_PORT
+   vercel env add SMTP_USERNAME
+   vercel env add SMTP_PASSWORD
+   vercel env add FROM_EMAIL
+   ```
+
+5. **Deploy to production**:
+   ```bash
+   vercel --prod
+   ```
+
+#### Post-Deployment Configuration
+
+1. **Update Firebase Configuration**:
+   - Add your Vercel domain to Firebase Authorized Domains
+   - Go to Firebase Console → Authentication → Settings → Authorized domains
+   - Add your Vercel URL (e.g., `your-app.vercel.app`)
+
+2. **Update CORS Settings**:
+   - The backend automatically allows requests from the same domain
+   - If you need custom CORS settings, update `server/index.js`
+
+3. **Test Email Functionality**:
+   - Verify SMTP credentials are working
+   - Test the Email Reminders feature in the Tracker tab
+
+#### Vercel Configuration
+
+The `vercel.json` file in the project root configures:
+- **Serverless Functions**: Backend API runs as serverless functions
+- **Routing**: API routes are handled by the backend, static files served directly
+- **Environment**: Production environment variables
+
+#### Updating Your Deployment
+
+**Automatic Deployments** (if connected to GitHub):
+- Every push to `main` branch automatically deploys to production
+- Pull requests create preview deployments
+
+**Manual Deployments**:
+```bash
+vercel --prod
+```
+
+#### Custom Domain (Optional)
+
+1. Go to your project in Vercel Dashboard
+2. Navigate to Settings → Domains
+3. Add your custom domain
+4. Follow DNS configuration instructions
+5. Update Firebase Authorized Domains with your custom domain
+
+#### Monitoring and Logs
+
+- **Vercel Dashboard**: View deployment logs and function logs
+- **Real-time Logs**: `vercel logs` (CLI)
+- **Analytics**: Available in Vercel Dashboard → Analytics
 
 ## API Endpoints
 
@@ -163,6 +301,13 @@ GET /health
 ```
 
 Returns server status and timestamp.
+
+### Email Reminders
+```http
+POST /api/email/reminders
+```
+
+Sends email reminders to assigned reviewers. See [Email Reminder Automation](#email-reminder-automation) section.
 
 ## Development
 

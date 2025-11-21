@@ -89,3 +89,6 @@ build/
 tmp/
 temp/
 *.tmp
+
+# Vercel
+.vercel

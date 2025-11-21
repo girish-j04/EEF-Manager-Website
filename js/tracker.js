@@ -358,7 +358,8 @@ export { activeStatusFilters, dueSort, trkDateFilter };
 let sendInFlight = false;
 
 function getEmailEndpoint() {
-    const customBase = window.APP_CONFIG?.apiBaseUrl || (window.location.hostname === "localhost" ? "http://localhost:3000" : "");
+    const isLocalDev = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const customBase = window.APP_CONFIG?.apiBaseUrl || (isLocalDev ? "http://localhost:3000" : "");
     const trimmed = (customBase || "").replace(/\/$/, "");
     return trimmed ? `${trimmed}/api/email/reminders` : "/api/email/reminders";
 }

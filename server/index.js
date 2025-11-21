@@ -28,10 +28,35 @@ const FROM_EMAIL = process.env.FROM_EMAIL || SMTP_USERNAME;
 app.use(helmet());
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8000',
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // In production (Vercel), allow same-origin requests
+    if (process.env.NODE_ENV === 'production') {
+      return callback(null, true);
+    }
+
+    // In development, allow localhost and 127.0.0.1
+    const allowedOrigins = [
+      'http://localhost:8000',
+      'http://127.0.0.1:8000',
+      'http://localhost:3000',
+      'http://127.0.0.1:3000',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Logging middleware
 app.use(morgan('dev'));
