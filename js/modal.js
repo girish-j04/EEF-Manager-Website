@@ -162,6 +162,27 @@ export async function openDetail(project, app, renderApproved, renderTracker, re
     // --- Previous Years / Previous Cycles section ---
     await renderPreviousYears(project, app);
 
+    // --- Tab Switching Logic ---
+    const modalTabs = document.querySelectorAll('.modal-tab');
+    const modalTabContents = document.querySelectorAll('.modal-tab-content');
+
+    modalTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.getAttribute('data-tab');
+
+            // Remove active class from all tabs and contents
+            modalTabs.forEach(t => t.classList.remove('active'));
+            modalTabContents.forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            const targetContent = document.querySelector(`.modal-tab-content[data-content="${targetTab}"]`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+
     // --- Amount / Status Save ---
     const amtInput = $("dt-amount");
     const statusSel = $("dt-status");

@@ -161,16 +161,26 @@ export function mountModal() {
             <div id="dt-toasts"></div>
 
             <div class="modal-body" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
-                <div style="flex:2 1 600px;min-width:480px;max-height:700px;overflow:auto;padding-right:8px;">
-                    <div class="flex gap-8" style="align-items:center; justify-content:flex-end">
+                <div style="flex:2 1 600px;min-width:480px;max-height:700px;overflow:hidden;padding-right:8px;display:flex;flex-direction:column;">
+                    <div class="flex gap-8" style="align-items:center; justify-content:flex-end;margin-bottom:12px;">
                         <a id="dt-prop" class="btn btn-primary btn-sm w-auto" target="_blank" rel="noopener" style="display:none">View Full Proposal</a>
                     </div>
-                    <h3 style="margin:12px 0 8px">Reviewer Notes</h3>
-                    <div id="dt-notes" style="max-height:300px;overflow:auto;"></div>
 
-                    <h3 style="margin:16px 0 8px">Previous Years</h3>
-                    <div id="dt-prev" style="font-size:13px;color:#9ca3af;">
-                        <div>Searching for similar proposals in previous cycles…</div>
+                    <!-- Tabs for Reviewer Notes and Previous Years -->
+                    <div class="modal-tabs">
+                        <button class="modal-tab active" data-tab="notes">Reviewer Notes</button>
+                        <button class="modal-tab" data-tab="previous">Previous Years</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="modal-tab-content active" data-content="notes" style="flex:1;overflow:auto;padding-top:12px;">
+                        <div id="dt-notes"></div>
+                    </div>
+
+                    <div class="modal-tab-content" data-content="previous" style="flex:1;overflow:auto;padding-top:12px;">
+                        <div id="dt-prev" style="font-size:13px;color:#9ca3af;">
+                            <div>Searching for similar proposals in previous cycles…</div>
+                        </div>
                     </div>
                 </div>
                 <div style="flex:1 1 380px;min-width:340px;">
