@@ -166,7 +166,12 @@ export function mountModal() {
                         <a id="dt-prop" class="btn btn-primary btn-sm w-auto" target="_blank" rel="noopener" style="display:none">View Full Proposal</a>
                     </div>
                     <h3 style="margin:12px 0 8px">Reviewer Notes</h3>
-                    <div id="dt-notes" style="max-height:620px;overflow:auto;"></div>
+                    <div id="dt-notes" style="max-height:300px;overflow:auto;"></div>
+
+                    <h3 style="margin:16px 0 8px">Previous Years</h3>
+                    <div id="dt-prev" style="font-size:13px;color:#9ca3af;">
+                        <div>Searching for similar proposals in previous cycles…</div>
+                    </div>
                 </div>
                 <div style="flex:1 1 380px;min-width:340px;">
                     <h3 style="margin:0 0 8px">Add / Edit Internal Note</h3>
@@ -199,6 +204,7 @@ export function mountModal() {
         </div>
     `;
 }
+
 
 // In-modal toast (persist until modal closes)
 export function notifyModal(message, type = "info", durationMs = 4000) {
