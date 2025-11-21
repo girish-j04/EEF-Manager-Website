@@ -34,7 +34,9 @@ import {
     renderTracker,
     openAutoAssignModal,
     closeAutoAssignModal,
-    runAutoAssign
+    runAutoAssign,
+    sendTrackerReminderEmails,
+    clearAllAssignments
 } from './tracker.js';
 import { renderApproved, exportApproved, remapApproved } from './approved.js';
 import { openDetail } from './modal.js';
@@ -124,6 +126,7 @@ const app = {
     proposalAmounts: {}, proposalNotes: {}, proposalStatus: {}, proposalDue: {},
     editingSurveyId: null, assigneeQuery: "",
     autoAssignConfig: { meetingDates: [], reviewerCount: 2, reviewerPool: [] },
+    reviewerDirectory: {},
     lastReloadAt: null,
     dataFilters: {},
     dataSearch: "",
@@ -185,13 +188,15 @@ async function boot() {
         $("tab-" + n).onclick = () => showSection(n);
     });
 
-    // Load tabs and UI config
-    const [tabs, ui] = await Promise.all([
+    // Load tabs, UI config, and the reviewer directory used for email reminders
+    const [tabs, ui, reviewerDirectory] = await Promise.all([
         storage.loadTabs(),
         storage.loadUIConfig(),
+        storage.loadReviewerDirectory(),
     ]);
 
     app.tabs = tabs;
+    app.reviewerDirectory = reviewerDirectory || {};
 
     const savedId = ui?.selectedDatasetId;
     app.selectedId = (savedId && app.tabs.some(t => t.id === savedId))
@@ -429,6 +434,10 @@ function bindUI() {
     $("trk-refresh").onclick = refreshTracker;
     const autoBtn = $("trk-auto");
     if (autoBtn) autoBtn.onclick = () => openAutoAssignModal(app);
+    const clearBtn = $("trk-clear");
+    if (clearBtn) clearBtn.onclick = () => clearAllAssignments(app, refreshTracker, () => renderDashboard(app));
+    const emailBtn = $("trk-email");
+    if (emailBtn) emailBtn.onclick = () => sendTrackerReminderEmails(app);
     ["auto-close", "auto-cancel"].forEach(id => {
         const btn = $(id);
         if (btn) btn.onclick = () => closeAutoAssignModal();
@@ -441,14 +450,6 @@ function bindUI() {
     );
     $("trk-q").oninput = (e) => { app.assigneeQuery = (e.target.value || "").toLowerCase(); refreshTracker(); };
     $("trk-q-clr").onclick = () => { app.assigneeQuery = ""; $("trk-q").value = ""; refreshTracker(); };
-    // use safe setter for tracker match select to respect locks/audit
-    $("trk-match").onchange = async () => {
-        const tab = app.activeTab; if (!tab) return;
-        const newCol = $("trk-match").value;
-        await setMatchColumn(tab, newCol, app, { force: false, user: "interface" });
-        refreshTracker();
-        renderData(app, setMatchColumn, updateMatchControlsUI, updateSurveyProposalLink);
-    };
 
     // Approved
     $("ap-exp").onclick = () => exportApproved(app);

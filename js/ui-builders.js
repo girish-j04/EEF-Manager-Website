@@ -71,11 +71,12 @@ export function mountTrackerUI() {
                 <div id="trk-meta" class="text-muted text-sm">—</div>
             </div>
             <div class="flex gap-8 flex-wrap tracker-controls">
-                <select id="trk-match" class="w-auto"></select>
                 <input id="trk-q" placeholder="Search assignee…" class="w-220">
                 <button id="trk-q-clr" class="btn btn-sm btn-outline">Clear</button>
                 <button id="trk-auto" class="btn btn-primary btn-sm">Auto Assign</button>
+                <button id="trk-clear" class="btn btn-sm btn-danger">Clear Assignments</button>
                 <button id="trk-refresh" class="btn btn-sm btn-outline">Refresh</button>
+                <button id="trk-email" class="btn btn-success btn-sm">Email Reminders</button>
             </div>
         </div>
         <div class="card-body tracker-body">
@@ -150,7 +151,7 @@ export function mountApprovedUI() {
 // Mount Modal UI
 export function mountModal() {
     $("detail").innerHTML = `
-        <div class="modal-card">
+        <div class="modal-card" style="max-width:1400px;width:96vw;">
             <div class="modal-header">
                 <strong id="dt-title">Proposal Detail</strong>
                 <span id="dt-x" class="close-x">&times;</span>
@@ -159,40 +160,40 @@ export function mountModal() {
             <!-- In-modal toasts -->
             <div id="dt-toasts"></div>
 
-            <div class="modal-body">
-                <div class="flex gap-8" style="align-items:center; justify-content:flex-end">
-                    <a id="dt-prop" class="btn btn-primary btn-sm w-auto" target="_blank" rel="noopener" style="display:none">View Full Proposal</a>
+            <div class="modal-body" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+                <div style="flex:2 1 600px;min-width:480px;max-height:700px;overflow:auto;padding-right:8px;">
+                    <div class="flex gap-8" style="align-items:center; justify-content:flex-end">
+                        <a id="dt-prop" class="btn btn-primary btn-sm w-auto" target="_blank" rel="noopener" style="display:none">View Full Proposal</a>
+                    </div>
+                    <h3 style="margin:12px 0 8px">Reviewer Notes</h3>
+                    <div id="dt-notes" style="max-height:620px;overflow:auto;"></div>
                 </div>
-                <h3 style="margin:12px 0 8px">Reviewer Notes</h3>
-                <div id="dt-notes"></div>
-            </div>
-
-            <div class="modal-actions">
-                <h3 style="margin:0 0 8px">Add / Edit Internal Note</h3>
-                <div id="autosave-status" style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
-                <textarea id="dt-note" placeholder="Internal note (not a survey response)" style="width:95%;min-height:110px;background:#334155;color:#F1F5F9;border:1px solid #334155;border-radius:10px;padding:9px 12px;"></textarea>
-            </div>
-            <div id="amt-status" style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
-
-            <div class="modal-actions flex gap-12 flex-wrap">
-                <div style="max-width:220px;flex:1 1 200px">
-                    <label>Funding Status</label>
-                    <select id="dt-status">
-                        <option value="">(none)</option>
-                        <option value="fully">Fully Funded</option>
-                        <option value="partial">Partially Funded</option>
-                        <option value="none">No Funding</option>
-                    </select>
-                </div>
-                <div style="max-width:220px;flex:1 1 200px">
-                    <label>Grant Amount</label>
-                    <input id="dt-amount" type="number" placeholder="0.00">
-                </div>
-                <div class="w-auto">
-                    <button id="dt-save-amount" class="btn btn-primary">Save Amount & Status</button>
-                </div>
-                <div class="w-auto">
-                    <button id="dt-approve" class="btn btn-success">Approve</button>
+                <div style="flex:1 1 380px;min-width:340px;">
+                    <h3 style="margin:0 0 8px">Add / Edit Internal Note</h3>
+                    <div id="autosave-status" style="font-size:12px;color:#9ca3af;margin-bottom:4px;"></div>
+                    <textarea id="dt-note" placeholder="Internal note (not a survey response)" style="width:100%;min-height:160px;background:#334155;color:#F1F5F9;border:1px solid #334155;border-radius:10px;padding:9px 12px;"></textarea>
+                    <div id="amt-status" style="font-size:12px;color:#9ca3af;margin:8px 0;"></div>
+                    <div class="modal-actions flex gap-12 flex-wrap" style="padding:0;">
+                        <div style="max-width:220px;flex:1 1 200px">
+                            <label>Funding Status</label>
+                            <select id="dt-status">
+                                <option value="">(none)</option>
+                                <option value="fully">Fully Funded</option>
+                                <option value="partial">Partially Funded</option>
+                                <option value="none">No Funding</option>
+                            </select>
+                        </div>
+                        <div style="max-width:220px;flex:1 1 200px">
+                            <label>Grant Amount</label>
+                            <input id="dt-amount" type="number" placeholder="0.00">
+                        </div>
+                        <div class="w-auto">
+                            <button id="dt-save-amount" class="btn btn-primary">Save Amount & Status</button>
+                        </div>
+                        <div class="w-auto">
+                            <button id="dt-approve" class="btn btn-success">Approve</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

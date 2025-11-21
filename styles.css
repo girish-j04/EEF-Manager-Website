@@ -1435,3 +1435,255 @@ button:focus-visible,
 *::-webkit-scrollbar-thumb:hover {
     background: var(--text-light);
 }
+
+/* --- REVIEWER NOTES CARDS (Modal) --- */
+.rev-card {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    margin-bottom: 14px;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+}
+
+.rev-card:hover {
+    border-color: var(--border);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.rev-card.expanded {
+    border-color: var(--primary);
+    box-shadow: 0 4px 20px -4px rgba(99, 102, 241, 0.2), var(--shadow-md);
+}
+
+.rev-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--surface);
+    border-bottom: 1px solid transparent;
+}
+
+.rev-card.expanded .rev-header {
+    background: linear-gradient(to right, var(--primary-light), var(--surface));
+    border-bottom-color: var(--border-light);
+}
+
+.rev-header:hover {
+    background: var(--surface-hover);
+}
+
+.rev-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.rev-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--primary-gradient);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    transition: transform 0.2s ease;
+}
+
+.rev-card:hover .rev-avatar {
+    transform: scale(1.05);
+}
+
+.rev-card:nth-child(2n) .rev-avatar {
+    background: var(--secondary-gradient);
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+}
+
+.rev-card:nth-child(3n) .rev-avatar {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+}
+
+.rev-card:nth-child(4n) .rev-avatar {
+    background: var(--success-gradient);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.rev-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.rev-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+.rev-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.rev-arrow {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform 0.3s ease, color 0.2s ease;
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.rev-card.expanded .rev-arrow {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
+
+.rev-body {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--surface);
+}
+
+.rev-body.open {
+    max-height: 2000px;
+    opacity: 1;
+    padding: 20px;
+}
+
+.rev-section {
+    margin-bottom: 18px;
+}
+
+.rev-section:last-child {
+    margin-bottom: 0;
+}
+
+.rev-section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.rev-section-icon {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.rev-section-content {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    padding: 14px 16px;
+    background: var(--surface-soft);
+    border-left: 3px solid var(--primary-light);
+    border-radius: var(--radius-sm);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.rev-card:nth-child(2n) .rev-section-content {
+    border-left-color: var(--secondary-light);
+}
+
+.rev-card:nth-child(3n) .rev-section-content {
+    border-left-color: var(--accent-light);
+}
+
+.rev-card:nth-child(4n) .rev-section-content {
+    border-left-color: var(--success-light);
+}
+
+/* Empty state */
+.rev-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    background: linear-gradient(135deg, var(--surface-soft) 0%, var(--surface) 100%);
+    border-radius: var(--radius-lg);
+    border: 2px dashed var(--border);
+}
+
+.rev-empty-icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+    animation: pulse 3s ease-in-out infinite;
+}
+
+.rev-empty-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.rev-empty-subtext {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* Responsive adjustments for reviewer notes */
+@media (max-width: 768px) {
+    .rev-header {
+        padding: 14px 16px;
+    }
+
+    .rev-body.open {
+        padding: 16px;
+    }
+
+    .rev-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
+
+    .rev-name {
+        font-size: 14px;
+    }
+
+    .rev-meta {
+        font-size: 11px;
+    }
+
+    .rev-section-content {
+        padding: 12px 14px;
+        font-size: 13px;
+    }
+
+    .rev-empty {
+        padding: 40px 20px;
+    }
+
+    .rev-empty-icon {
+        font-size: 48px;
+    }
+}

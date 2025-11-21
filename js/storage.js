@@ -87,4 +87,15 @@ export const storage = {
     async saveUIConfig(patch) {
         await db.collection("config").doc("ui").set(patch, { merge: true });
     },
+
+    // --- Reviewer directory (global) ---
+    async loadReviewerDirectory() {
+        const doc = await db.collection("config").doc("reviewers").get();
+        if (!doc.exists) return {};
+        const data = doc.data() || {};
+        if (data.directory && typeof data.directory === "object") {
+            return data.directory;
+        }
+        return data;
+    },
 };

@@ -510,6 +510,32 @@ Ensure you migrate these collections:
 2. Check Firestore Data tab in Firebase Console to confirm data was imported
 3. Try refreshing browser cache (Ctrl+Shift+R / Cmd+Shift+R)
 
+## Email Reminder SMTP Setup
+
+1. **Reviewer directory**  
+   In Firestore add the document `config/reviewers` containing a JSON map of reviewer names to email addresses:
+   ```json
+   {
+     "Bianca": "bianca@example.edu",
+     "Jake": "jake@example.edu"
+   }
+   ```
+   Only reviewers that appear in this document will receive reminders.
+
+2. **Server environment variables**  
+   Add these to `.env` (or your hosting provider’s secrets):
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USERNAME=cuphdadvisor@gmail.com
+   SMTP_PASSWORD=xhpowtbjqrbxuxsm
+   FROM_EMAIL=cuphdadvisor@gmail.com
+   ```
+   The tracker button calls `POST /api/email/reminders` on the Node server, which reads these values and sends emails via SMTP. Adjust them if you switch providers or sender addresses.
+
+3. **Test locally**  
+   Start the backend with `npm run dev`, load the frontend, and click **Email Reminders**. The server logs will show the delivery results; the UI will display warnings for reviewers that are missing directory entries.
+
 ## Firebase Quotas & Limits
 
 ### Free Tier (Spark Plan)

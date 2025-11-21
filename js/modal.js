@@ -62,26 +62,84 @@ export async function openDetail(project, app, renderApproved, renderTracker, re
     // --- Reviewer Notes (Collapsible) ---
     const related = app.surveys.filter(s => s.projectName === project);
     notesArea.innerHTML = related.length
-        ? related.map((s, i) => `
-            <div class="rev-card" id="rev-${i}" style="border:1px solid #334155;border-radius:8px;margin:8px 0;background:rgba(255,255,255,.05);">
+        ? related.map((s, i) => {
+            const timestamp = s.timestamp ? new Date(s.timestamp).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            }) : '';
+
+            const initials = s.reviewerName ? s.reviewerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+
+            return `
+            <div class="rev-card" id="rev-${i}">
                 <div class="rev-header">
-                    <div><strong>${esc(s.reviewerName)}</strong> • ${esc(s.projectType)} (${esc(s.year)})</div>
-                    <span class="arrow">▼</span>
+                    <div class="rev-header-left">
+                        <div class="rev-avatar">${initials}</div>
+                        <div class="rev-info">
+                            <div class="rev-name">${esc(s.reviewerName)}</div>
+                            <div class="rev-meta">
+                                ${esc(s.projectType)} • ${esc(s.year)}${timestamp ? ` • ${timestamp}` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="rev-arrow">▼</span>
                 </div>
                 <div class="rev-body">
-                    ${s.overall ? `<div><strong>Overall:</strong> ${esc(s.overall)}</div>` : ""}
-                    ${s.lineItems ? `<div class="mt-6"><strong>Line Items:</strong> ${esc(s.lineItems)}</div>` : ""}
-                    ${s.funding ? `<div class="mt-6"><strong>Funding:</strong> ${esc(s.funding)}</div>` : ""}
-                    ${s.impact ? `<div class="mt-6"><strong>Impact:</strong> ${esc(s.impact)}</div>` : ""}
+                    ${s.overall ? `
+                        <div class="rev-section">
+                            <div class="rev-section-label">
+                                <span class="rev-section-icon">💭</span>
+                                <span>Overall Thoughts</span>
+                            </div>
+                            <div class="rev-section-content">${esc(s.overall)}</div>
+                        </div>
+                    ` : ""}
+                    ${s.lineItems ? `
+                        <div class="rev-section">
+                            <div class="rev-section-label">
+                                <span class="rev-section-icon">📋</span>
+                                <span>Line Items</span>
+                            </div>
+                            <div class="rev-section-content">${esc(s.lineItems)}</div>
+                        </div>
+                    ` : ""}
+                    ${s.funding ? `
+                        <div class="rev-section">
+                            <div class="rev-section-label">
+                                <span class="rev-section-icon">💰</span>
+                                <span>Funding Recommendation</span>
+                            </div>
+                            <div class="rev-section-content">${esc(s.funding)}</div>
+                        </div>
+                    ` : ""}
+                    ${s.impact ? `
+                        <div class="rev-section">
+                            <div class="rev-section-label">
+                                <span class="rev-section-icon">👥</span>
+                                <span>Impact</span>
+                            </div>
+                            <div class="rev-section-content">${esc(s.impact)} people</div>
+                        </div>
+                    ` : ""}
                 </div>
-            </div>`).join("")
-        : `<div class="text-muted">No reviewer notes yet.</div>`;
+            </div>`;
+        }).join("")
+        : `<div class="rev-empty">
+            <div class="rev-empty-icon">📝</div>
+            <div class="rev-empty-text">No reviewer notes yet</div>
+            <div class="rev-empty-subtext">Submit a review to see notes appear here</div>
+        </div>`;
 
     notesArea.querySelectorAll(".rev-header").forEach(header => {
         header.addEventListener("click", () => {
             const body = header.nextElementSibling;
-            const arrow = header.querySelector(".arrow");
+            const arrow = header.querySelector(".rev-arrow");
+            const card = header.closest(".rev-card");
             const open = body.classList.toggle("open");
+            card.classList.toggle("expanded");
             arrow.textContent = open ? "▲" : "▼";
         });
     });

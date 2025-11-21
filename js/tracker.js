@@ -9,6 +9,19 @@
 import { $, setText, esc, attr, notify, toLocalYMD, firstName, looksLikeUrl, canonicalizeSharePointLink } from './utils.js';
 import { storage } from './storage.js';
 
+const DEFAULT_REVIEWERS = [
+    "Bianca",
+    "Chloe",
+    "Abel",
+    "Reid",
+    "Julianna",
+    "Ayushi",
+    "Jake",
+    "Trinity",
+    "Josh",
+    "Amy"
+];
+
 // Global filter/sort state for tracker due date filter + sort
 let activeStatusFilters = new Set();
 let dueSort = null;
@@ -56,8 +69,12 @@ export function renderTracker(app, renderReviewerDashboard, openDetail) {
     app.trackerData = []; // reset for dashboard summary
 
     if (!tab) { setText("trk-meta", "No dataset selected"); const b = $("trk-body"); if (b) b.innerHTML = ""; return; }
-    $("trk-match").innerHTML = tab.headers.map(h => `<option ${h === tab.matchColumn ? "selected" : ""}>${esc(h)}</option>`).join("");
-    const matchCol = $("trk-match").value;
+    const matchCol = tab.matchColumn || tab.headers?.[0];
+    const matchSel = $("trk-match");
+    if (matchSel) {
+        matchSel.innerHTML = tab.headers.map(h => `<option ${h === matchCol ? "selected" : ""}>${esc(h)}</option>`).join("");
+        matchSel.value = matchCol;
+    }
 
     let projects = [...new Set((tab.data || []).map(r => String(r[matchCol] || "").trim()).filter(Boolean))];
 
@@ -174,6 +191,7 @@ export function renderTracker(app, renderReviewerDashboard, openDetail) {
             : `<span class="assignees" style="display:block;margin-top:6px;color:#94A3B8;font-size:12px">—</span>`;
 
         const submitBtnHtml = `<button class="btn btn-success btn-sm" data-action="submit">Submit</button>`;
+        const editBtnHtml = `<button class="btn btn-sm btn-outline" data-action="edit-assignees">Edit Assignees</button>`;
         // normalize stored due (use local yyyy-mm-dd for date input)
         const dueVal = toLocalYMD(app.proposalDue[p] || row["Due Date"] || row.Due || "");
 
@@ -189,6 +207,7 @@ export function renderTracker(app, renderReviewerDashboard, openDetail) {
                     <td><span class="status-badge ${cls}">${label}</span></td>
                     <td class="actions-col">
                         <button class="btn btn-sm" data-action="details">Details</button>
+                        ${editBtnHtml}
                         ${submitBtnHtml}
                     </td>
                     <td>
@@ -211,6 +230,13 @@ export function renderTracker(app, renderReviewerDashboard, openDetail) {
             detailsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 openDetail(project);
+            });
+        }
+        const editBtn = tr.querySelector('button[data-action="edit-assignees"]');
+        if (editBtn) {
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                editProjectAssignees(project, app, () => renderTracker(app, renderReviewerDashboard, openDetail), renderReviewerDashboard);
             });
         }
 
@@ -329,16 +355,196 @@ export function getProposalUrl(project, tab, matchCol) {
 // Export filter/sort state and functions for post-processing
 export { activeStatusFilters, dueSort, trkDateFilter };
 
+let sendInFlight = false;
+
+function getEmailEndpoint() {
+    const customBase = window.APP_CONFIG?.apiBaseUrl || (window.location.hostname === "localhost" ? "http://localhost:3000" : "");
+    const trimmed = (customBase || "").replace(/\/$/, "");
+    return trimmed ? `${trimmed}/api/email/reminders` : "/api/email/reminders";
+}
+
+function buildDirectoryLookup(directory = {}) {
+    const lookup = {};
+    const source = directory || {};
+    Object.entries(source).forEach(([key, value]) => {
+        if (!value) return;
+        const baseName = (typeof value === "object" && value.name) ? value.name : key;
+        const email = typeof value === "string"
+            ? value
+            : (value.email || value.address || value.mail);
+        if (!email) return;
+        const norm = (baseName || key || "").trim().toLowerCase();
+        if (!norm) return;
+        const contact = {
+            name: baseName || key,
+            email: email.trim()
+        };
+        lookup[norm] = contact;
+        const short = firstName(baseName || key).trim().toLowerCase();
+        if (short && !lookup[short]) {
+            lookup[short] = contact;
+        }
+    });
+    return lookup;
+}
+
+export async function editProjectAssignees(project, app, rerenderTracker, rerenderDashboard) {
+    if (!project || !app) return;
+    const current = (app.assignments?.[project] || []).join(", ");
+    const input = prompt(`Edit assignees for "${project}" (comma or newline separated):`, current);
+    if (input == null) return; // cancelled
+    const list = input
+        .split(/\n|,/)
+        .map(x => x.trim())
+        .filter(Boolean);
+    app.assignments = app.assignments || {};
+    app.assignments[project] = list;
+    await storage.saveAssignments(app.selectedId, app.assignments);
+    notify(`Saved ${list.length} assignee(s) for "${project}"`, "success");
+    if (typeof rerenderTracker === "function") rerenderTracker();
+    if (typeof rerenderDashboard === "function") rerenderDashboard(app);
+}
+
+export async function clearAllAssignments(app, rerenderTracker, rerenderDashboard) {
+    if (!app) return;
+    const hasAssignments = app.assignments && Object.keys(app.assignments).length > 0;
+    if (!hasAssignments) {
+        notify("No assignments to clear.", "info");
+        return;
+    }
+    if (!confirm("Clear all reviewer assignments for this dataset?")) return;
+    app.assignments = {};
+    await storage.saveAssignments(app.selectedId, {});
+    notify("All assignments cleared.", "success");
+    if (typeof rerenderTracker === "function") rerenderTracker();
+    if (typeof rerenderDashboard === "function") rerenderDashboard(app);
+}
+
+export async function sendTrackerReminderEmails(app) {
+    if (sendInFlight) {
+        return notify("Reminder emails are already being sent…", "info");
+    }
+
+    const tab = app.activeTab;
+    if (!tab) return notify("Select a dataset before sending emails.", "error");
+    const assignments = app.assignments || {};
+    const matchCol = tab.matchColumn || tab.headers?.[0];
+    if (!matchCol) return notify("No match column available for this dataset.", "error");
+
+    const lookup = buildDirectoryLookup(app.reviewerDirectory || {});
+    const missing = new Set();
+    const reviewerPayload = {};
+    const projects = Object.keys(assignments || {});
+    const rows = tab.data || [];
+
+    projects.forEach(project => {
+        const assignees = (assignments[project] || []).filter(Boolean);
+        if (!assignees.length) return;
+        const row = rows.find(r => String(r[matchCol] || "").trim() === project) || {};
+        const dueRaw = app.proposalDue[project] || row["Due Date"] || row.Due || row["deadline"] || "";
+        const dueYMD = toLocalYMD(dueRaw);
+        const dueHuman = dueYMD ? new Date(`${dueYMD}T00:00:00`).toLocaleDateString() : "";
+        const proposalUrl = getProposalUrl(project, tab, matchCol);
+
+        assignees.forEach((name) => {
+            const cleanName = String(name || "").trim();
+            if (!cleanName) return;
+            const norm = cleanName.toLowerCase();
+            const alt = firstName(cleanName).toLowerCase();
+            const contact = lookup[norm] || lookup[alt];
+            if (!contact) {
+                missing.add(cleanName);
+                return;
+            }
+            if (!reviewerPayload[norm]) {
+                reviewerPayload[norm] = {
+                    name: contact.name || name,
+                    email: contact.email,
+                    assignments: [],
+                };
+            }
+            reviewerPayload[norm].assignments.push({
+                projectName: project,
+                dueDate: dueYMD || "",
+                dueDateHuman: dueHuman || "",
+                proposalUrl: proposalUrl || "",
+            });
+        });
+    });
+
+    const reviewerList = Object.values(reviewerPayload);
+    if (!reviewerList.length) {
+        if (missing.size) {
+            return notify("No reviewer emails found. Update the reviewer directory in Firestore.", "error");
+        }
+        return notify("No reviewer assignments available to email.", "info");
+    }
+
+    const btn = $("trk-email");
+    const prevLabel = btn ? btn.textContent : "";
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+    }
+
+    sendInFlight = true;
+    try {
+        const endpoint = getEmailEndpoint();
+        let token = null;
+        if (firebase?.auth) {
+            const user = firebase.auth().currentUser;
+            if (user?.getIdToken) {
+                try { token = await user.getIdToken(); } catch (err) { console.warn("getIdToken failed", err); }
+            }
+        }
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+                datasetId: app.selectedId,
+                datasetName: tab.name || "(unnamed)",
+                triggeredBy: app.user?.email || app.user?.displayName || "unknown user",
+                reviewers: reviewerList,
+                trackerUrl: window.location.href,
+            }),
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || `SMTP request failed (${res.status})`);
+        }
+        if (missing.size) {
+            notify(`Emails sent. Missing contacts for: ${Array.from(missing).join(", ")}`, "warning");
+        } else {
+            notify("Reviewer reminder emails sent.", "success");
+        }
+    } catch (err) {
+        console.error("sendReviewerReminderEmails failed", err);
+        notify(err?.message || "Unable to send reminder emails.", "error");
+    } finally {
+        sendInFlight = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = prevLabel || "Email Reminders";
+        }
+    }
+}
+
 export function openAutoAssignModal(app) {
     const modal = $("auto-assign-modal");
     if (!modal) return;
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     const cfg = app.autoAssignConfig || { meetingDates: [], reviewerCount: 2, reviewerPool: [] };
-    const datesInput = cfg.meetingDates?.join("\n") || "";
-    $("auto-dates").value = datesInput;
+    if (!cfg.reviewerPool || cfg.reviewerPool.length === 0) {
+        cfg.reviewerPool = DEFAULT_REVIEWERS.slice();
+    }
+    app.autoAssignConfig = cfg;
+    $("auto-dates").value = (cfg.meetingDates || []).join("\n");
     $("auto-count").value = cfg.reviewerCount || 2;
-    $("auto-reviewers").value = (cfg.reviewerPool || []).join("\n");
+    $("auto-reviewers").value = cfg.reviewerPool.join("\n");
 }
 
 export function closeAutoAssignModal() {
@@ -382,29 +588,24 @@ export async function runAutoAssign(app, rerenderTracker, rerenderDashboard) {
     let currentDateIndex = 0;
     let chunkCounter = 0;
 
-    const combosUsed = new Set();
-    let queueIndex = 0;
-
+    // Balance by always picking reviewers with the lowest current load (tie-broken by rotation)
+    const assignCounts = {};
+    reviewerPool.forEach(name => { assignCounts[name] = 0; });
+    let rotateOffset = 0;
     const getNextCombo = () => {
-        if (reviewerPool.length === 0) return [];
-        if (reviewerPool.length === reviewerCount) return reviewerPool.slice();
-        let fallback = reviewerPool.slice(0, reviewerCount);
-        let attempts = 0;
-        while (attempts < reviewerPool.length) {
-            const combo = [];
-            for (let i = 0; i < reviewerCount; i++) {
-                combo.push(reviewerPool[(queueIndex + i) % reviewerPool.length]);
-            }
-            const key = combo.slice().sort().join("|");
-            queueIndex = (queueIndex + 1) % reviewerPool.length;
-            attempts++;
-            if (!combosUsed.has(key)) {
-                combosUsed.add(key);
-                return combo;
-            }
-            if (attempts === 1) fallback = combo;
-        }
-        return fallback;
+        const scored = reviewerPool.map((name, idx) => ({
+            name,
+            load: assignCounts[name] || 0,
+            order: (idx + rotateOffset) % reviewerPool.length,
+        }));
+        scored.sort((a, b) => {
+            if (a.load !== b.load) return a.load - b.load;
+            return a.order - b.order;
+        });
+        const chosen = scored.slice(0, reviewerCount).map(s => s.name);
+        chosen.forEach(n => assignCounts[n] = (assignCounts[n] || 0) + 1);
+        rotateOffset = (rotateOffset + 1) % reviewerPool.length;
+        return chosen;
     };
 
     const newAssignments = {};

@@ -138,6 +138,23 @@ EEF Manager/
 npm start
 ```
 
+## Email Reminder Automation
+
+Use the **Email Reminders** button in the Tracker tab to email each reviewer a summary of their assigned projects/due dates. The frontend gathers reviewer metadata and calls the backend route `POST /api/email/reminders`, which in turn uses basic SMTP credentials.
+
+1. **Reviewer directory** – In Firestore create the document `config/reviewers` with a map of reviewer names to email addresses. Names are matched case-insensitively (and by first name) so `{"Bianca": "bianca@example.edu"}` is enough.
+2. **Configure SMTP env vars** – Update `.env` (or the actual environment) with:
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USERNAME=cuphdadvisor@gmail.com
+   SMTP_PASSWORD=xhpowtbjqrbxuxsm
+   FROM_EMAIL=cuphdadvisor@gmail.com
+   ```
+   Change these values to use a different mailbox/provider.
+3. **Run the backend** – `npm run dev` (or `npm start`) must be running so the `/api/email/reminders` endpoint is available.
+4. **Send emails** – Open the Tracker tab and click **Email Reminders**. The UI will disable the button while the server sends emails and will warn you if any reviewers are missing email addresses in the Firestore directory.
+
 ## API Endpoints
 
 ### Health Check
@@ -197,5 +214,3 @@ Requires a modern browser with ES6 module support:
 - Firefox 60+
 - Safari 11+
 - Edge 16+
-
-
