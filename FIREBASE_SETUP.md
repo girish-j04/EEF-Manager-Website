@@ -527,9 +527,9 @@ Ensure you migrate these collections:
    ```env
    SMTP_HOST=smtp.gmail.com
    SMTP_PORT=465
-   SMTP_USERNAME=cuphdadvisor@gmail.com
-   SMTP_PASSWORD=xhpowtbjqrbxuxsm
-   FROM_EMAIL=cuphdadvisor@gmail.com
+   SMTP_USERNAME=your_username@gmail.com
+   SMTP_PASSWORD=your_app_password
+   FROM_EMAIL=your_email@gmail.com
    ```
    The tracker button calls `POST /api/email/reminders` on the Node server, which reads these values and sends emails via SMTP. Adjust them if you switch providers or sender addresses.
 
